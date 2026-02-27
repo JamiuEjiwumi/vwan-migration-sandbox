@@ -23,6 +23,11 @@ on:
         description: "Hub code for canary (e.g., AZS)"
         required: false
         default: "AZS"
+      skip_nva:
+        description: "Skip Fortinet NVA + routing intent + discovery (true/false)"
+        required: true
+        default: "true
+
 
 permissions:
   id-token: write
@@ -95,6 +100,7 @@ jobs:
           }
 
       - name: Accept Fortinet marketplace terms (per version)
+        if: ${{ inputs.skip_nva != 'true' }}
         shell: pwsh
         run: |
           pwsh -File scripts/Preflight-AcceptFortinetTerms.ps1 `
@@ -104,6 +110,7 @@ jobs:
             -CanaryHubCode "${{ steps.vars.outputs.canary_hub }}"
 
       - name: Validate required secrets exist
+        if: ${{ inputs.skip_nva != 'true' }}
         shell: pwsh
         run: |
           if (-not "${{ secrets.FORTIMANAGER_IP }}") { throw "Missing FORTIMANAGER_IP secret" }
@@ -279,6 +286,7 @@ jobs:
     name: 5) Deploy Fortinet NVA + Routing Intent (per hub)
     runs-on: ubuntu-latest
     needs: [deploy_rbac]
+    if: ${{ inputs.skip_nva != 'true' }}
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
@@ -323,6 +331,7 @@ jobs:
     name: 6) Discover managed RG + NVA resource IDs (per hub)
     runs-on: ubuntu-latest
     needs: [deploy_nva]
+    if: ${{ inputs.skip_nva != 'true' }}
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
@@ -359,6 +368,7 @@ jobs:
     name: 7) Validate routing intent
     runs-on: ubuntu-latest
     needs: [discover_nva]
+    if: ${{ inputs.skip_nva != 'true' }}
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
