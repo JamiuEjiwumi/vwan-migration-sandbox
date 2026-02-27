@@ -1,0 +1,42 @@
+kind: vhub
+hubCode: AAS
+region: southafricanorth
+name: AAS-southafricanorth-vHub
+
+resourceGroup:
+  name: rg-vhub-aas-southafricanorth
+  location: southafricanorth
+
+vwan:
+  name: global-vwan
+  resourceGroup: rg-vwan-octave-platform
+
+hubAddressPrefix: 10.51.10.0/24
+scaleUnit: "2"
+
+nva:
+  type: fortinet
+  offer: fortinet_fortigate_vwan_nva
+  publisher: fortinet
+  plan: fortinet_fg_vm_payg
+  version: "2023.7.2.10"
+  fortiGateASN: "65010"
+  fortiManager:
+    ipSecretName: FORTIMANAGER_IP
+    serialSecretName: FORTIMANAGER_SERIAL
+
+uami:
+  name: uami-aas-southafricanorth-vhub
+  resourceGroup: rg-vhub-aas-southafricanorth
+  roleAssignments:
+    - role: Contributor
+      scope: subscription
+
+tags:
+  Owner: Network
+  Program: OctaveMigration
+  Region: southafricanorth
+
+deploymentScript: Deploy-vHubs.ps1
+deploymentPriority: 200
+resourceVersion: 20260226

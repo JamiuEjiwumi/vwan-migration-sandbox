@@ -1,0 +1,42 @@
+kind: vhub
+hubCode: AZI
+region: southindia
+name: AZI-southindia-vHub
+
+resourceGroup:
+  name: rg-vhub-azi-southindia
+  location: southindia
+
+vwan:
+  name: global-vwan
+  resourceGroup: rg-vwan-octave-platform
+
+hubAddressPrefix: 10.59.10.0/24
+scaleUnit: "2"
+
+nva:
+  type: fortinet
+  offer: fortinet_fortigate_vwan_nva
+  publisher: fortinet
+  plan: fortinet_fg_vm_payg
+  version: "2023.7.2.10"     # used for terms acceptance gating
+  fortiGateASN: "65010"
+  fortiManager:
+    ipSecretName: FORTIMANAGER_IP
+    serialSecretName: FORTIMANAGER_SERIAL
+
+uami:
+  name: uami-azi-southindia-vhub
+  resourceGroup: rg-vhub-azi-southindia
+  roleAssignments:
+    - role: Contributor
+      scope: subscription       # your chosen standard
+
+tags:
+  Owner: Network
+  Program: OctaveMigration
+  Region: southindia
+
+deploymentScript: Deploy-vHubs.ps1
+deploymentPriority: 200
+resourceVersion: 20260226

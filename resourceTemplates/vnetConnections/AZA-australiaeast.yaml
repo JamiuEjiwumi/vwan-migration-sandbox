@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: AZA
+hubName: AZA-australiaeast-vHub
+hubResourceGroup: rg-vhub-aza-australiaeast
+hubRegion: australiaeast
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-australiaeast-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-australiaeast
+    vnetName: vnet-corpnet-ppmalidev-australiaeast
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-australiaeast-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-australiaeast
+    vnetName: vnet-corpnet-ppmalidev2-australiaeast
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

@@ -1,0 +1,28 @@
+# kind: routingIntent
+# name: routingIntent-securedHub-default
+
+# intent:
+#   internetTraffic:
+#     enabled: true
+#     nextHop: nva     # reference to hub’s NVA
+#   privateTraffic:
+#     enabled: true
+#     nextHop: nva
+
+# # Apply to all hubs unless filtered in workflow input
+# applyToHubs:
+#   - AAE
+#   - ACI
+#   - ASA
+#   - ASE
+#   - ASU
+#   - AZA
+#   - AZB
+#   - AZC
+#   - AZE
+#   - AZI
+#   - AZS
+
+# deploymentScript: Deploy-RoutingIntent.ps1
+# deploymentPriority: 600
+# resourceVersion: 20260226

@@ -1,0 +1,429 @@
+name: Octave VWAN Migration - Redeploy Backbone
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "GitHub Environment (e.g., octave-prod)"
+        required: true
+        default: "octave-prod"
+      hubs_filter:
+        description: "Hub code filter (e.g., AZS) or 'all'"
+        required: false
+        default: "all"
+      connect_vnets:
+        description: "Also deploy VNet connections (true/false)"
+        required: true
+        default: "false"
+      canary_mode:
+        description: "Deploy only a single hub (true/false)"
+        required: true
+        default: "false"
+      canary_hub_code:
+        description: "Hub code for canary (e.g., AZS)"
+        required: false
+        default: "AZS"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: octave-vwan-migration
+  cancel-in-progress: false
+
+env:
+  POWERSHELL_TELEMETRY_OPTOUT: "1"
+  AZURE_CORE_ONLY_SHOW_ERRORS: "true"
+
+jobs:
+  validate_templates:
+    name: Validate templates (shape + required fields)
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Validate template files
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-YamlSchemas.ps1 -TemplatesRoot "resourceTemplates"
+
+  preflight:
+    name: Preflight (Azure login, marketplace terms, provider checks)
+    runs-on: ubuntu-latest
+    needs: [validate_templates]
+    environment: ${{ inputs.environment }}
+    outputs:
+      hubs_filter: ${{ steps.vars.outputs.hubs_filter }}
+      canary_hub: ${{ steps.vars.outputs.canary_hub }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set vars
+        id: vars
+        shell: pwsh
+        run: |
+          "hubs_filter=${{ inputs.hubs_filter }}" >> $env:GITHUB_OUTPUT
+          "canary_hub=${{ inputs.canary_hub_code }}" >> $env:GITHUB_OUTPUT
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure required resource providers are registered
+        shell: pwsh
+        run: |
+          $providers = @(
+            "Microsoft.Network",
+            "Microsoft.Solutions",
+            "Microsoft.ManagedIdentity",
+            "Microsoft.Authorization"
+          )
+          foreach ($p in $providers) {
+            az provider register -n $p --wait
+          }
+
+      - name: Accept Fortinet marketplace terms (per version)
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Preflight-AcceptFortinetTerms.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ steps.vars.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ steps.vars.outputs.canary_hub }}"
+
+      - name: Validate required secrets exist
+        shell: pwsh
+        run: |
+          if (-not "${{ secrets.FORTIMANAGER_IP }}") { throw "Missing FORTIMANAGER_IP secret" }
+          if (-not "${{ secrets.FORTIMANAGER_SERIAL }}") { throw "Missing FORTIMANAGER_SERIAL secret" }
+          if (-not "${{ secrets.FORTIGATE_ADMIN_PASSWORD }}") { throw "Missing FORTIGATE_ADMIN_PASSWORD secret" }
+
+  deploy_vwan:
+    name: 1) Deploy VWAN
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy VWAN
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Deploy-VWAN.ps1 -TemplatePath "resourceTemplates/vwan/vwan-global.yaml"
+
+      - name: Validate VWAN
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "vwan"
+
+  deploy_hubs:
+    name: 2) Deploy base hubs
+    runs-on: ubuntu-latest
+    needs: [deploy_vwan]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy hubs from YAML
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Deploy-vHubs.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+      - name: Validate hubs
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "hubs" `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+  deploy_uami:
+    name: 3) Create UAMI (one per hub)
+    runs-on: ubuntu-latest
+    needs: [deploy_hubs]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy UAMI per hub
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Deploy-UAMI.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+      - name: Validate UAMI
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "uami" `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+  deploy_rbac:
+    name: 4) Assign RBAC (Contributor @ subscription)
+    runs-on: ubuntu-latest
+    needs: [deploy_uami]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Assign Contributor role to UAMI at subscription scope
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Deploy-RBAC.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}" `
+            -RoleName "Contributor" `
+            -Scope "subscription"
+
+      - name: Wait for RBAC propagation
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Wait-RbacPropagation.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}" `
+            -TimeoutMinutes 20 `
+            -PollSeconds 20
+
+      - name: Validate RBAC
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "rbac" `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+  deploy_nva:
+    name: 5) Deploy Fortinet NVA + Routing Intent (per hub)
+    runs-on: ubuntu-latest
+    needs: [deploy_rbac]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy NVA per hub
+        shell: pwsh
+        env:
+          FORTIGATE_ADMIN_PASSWORD: ${{ secrets.FORTIGATE_ADMIN_PASSWORD }}
+        run: |
+          pwsh -File scripts/Deploy-NVA.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}" `
+            -FortiManagerIP "${{ secrets.FORTIMANAGER_IP }}" `
+            -FortiManagerSerial "${{ secrets.FORTIMANAGER_SERIAL }}"
+
+      - name: Validate NVA
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "nva" `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+  discover_nva:
+    name: 6) Discover managed RG + NVA resource IDs (per hub)
+    runs-on: ubuntu-latest
+    needs: [deploy_nva]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Discover NVA IDs
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Discover-NvaFromManagedRg.ps1 `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+      - name: Upload NVA mapping artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nva-map
+          path: artifacts/nva-map
+
+  validate_routing_intent:
+    name: 7) Validate routing intent
+    runs-on: ubuntu-latest
+    needs: [discover_nva]
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate routing intent
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "routing_intent" `
+            -HubsFolder "resourceTemplates/hubs" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+  connect_vnets:
+    name: 8) Connect VNets to hubs
+    runs-on: ubuntu-latest
+    needs: [validate_routing_intent]
+    if: ${{ inputs.connect_vnets == 'true' }}
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser
+          }
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy VNet connections
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Deploy-VHubVnetConnections.ps1 `
+            -ConnectionsFolder "resourceTemplates/vnetConnections" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+      - name: Validate connections
+        shell: pwsh
+        run: |
+          pwsh -File scripts/Validate-Stage.ps1 -Stage "vnet_connections" `
+            -ConnectionsFolder "resourceTemplates/vnetConnections" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -CanaryMode "${{ inputs.canary_mode }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [validate_templates, preflight, deploy_vwan, deploy_hubs, deploy_uami, deploy_rbac, deploy_nva, discover_nva, validate_routing_intent, connect_vnets]
+    if: always()
+    steps:
+      - name: Completed
+        run: echo "Octave VWAN migration workflow completed."

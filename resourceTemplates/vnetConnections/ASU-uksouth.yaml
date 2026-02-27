@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: ASU
+hubName: ASU-uksouth-vHub
+hubResourceGroup: rg-vhub-asu-uksouth
+hubRegion: uksouth
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-uksouth-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-uksouth
+    vnetName: vnet-corpnet-ppmalidev-uksouth
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-uksouth-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-uksouth
+    vnetName: vnet-corpnet-ppmalidev2-uksouth
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

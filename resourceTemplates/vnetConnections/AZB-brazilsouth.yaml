@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: AZB
+hubName: AZB-brazilsouth-vHub
+hubResourceGroup: rg-vhub-azb-brazilsouth
+hubRegion: brazilsouth
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-brazilsouth-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-brazilsouth
+    vnetName: vnet-corpnet-ppmalidev-brazilsouth
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-brazilsouth-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-brazilsouth
+    vnetName: vnet-corpnet-ppmalidev2-brazilsouth
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

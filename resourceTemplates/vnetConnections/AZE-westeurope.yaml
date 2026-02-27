@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: AZE
+hubName: AZE-westeurope-vHub
+hubResourceGroup: rg-vhub-aze-westeurope
+hubRegion: westeurope
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-westeurope-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-westeurope
+    vnetName: vnet-corpnet-ppmalidev-westeurope
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-westeurope-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-westeurope
+    vnetName: vnet-corpnet-ppmalidev2-westeurope
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: AZI
+hubName: AZI-southindia-vHub
+hubResourceGroup: rg-vhub-azi-southindia
+hubRegion: southindia
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-southindia-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-southindia
+    vnetName: vnet-corpnet-ppmalidev-southindia
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-southindia-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-southindia
+    vnetName: vnet-corpnet-ppmalidev2-southindia
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

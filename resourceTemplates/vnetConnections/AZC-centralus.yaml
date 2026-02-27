@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: AZC
+hubName: AZC-centralus-vHub
+hubResourceGroup: rg-vhub-azc-centralus
+hubRegion: centralus
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-centralus-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-centralus
+    vnetName: vnet-corpnet-ppmalidev-centralus
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-centralus-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-centralus
+    vnetName: vnet-corpnet-ppmalidev2-centralus
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

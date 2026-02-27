@@ -1,0 +1,28 @@
+kind: vnetConnections
+hubCode: ASE
+hubName: ASE-southeastasia-vHub
+hubResourceGroup: rg-vhub-ase-southeastasia
+hubRegion: southeastasia
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-southeastasia-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-southeastasia
+    vnetName: vnet-corpnet-ppmalidev-southeastasia
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-southeastasia-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-southeastasia
+    vnetName: vnet-corpnet-ppmalidev2-southeastasia
+    # uses defaults
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226

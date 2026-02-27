@@ -1,0 +1,15 @@
+kind: vwan
+name: global-vwan
+location: eastus2
+
+resourceGroup:
+  name: rg-vwan-octave-platform
+  location: eastus2
+
+tags:
+  Owner: Network
+  Program: OctaveMigration
+
+deploymentScript: Deploy-VWAN.ps1
+deploymentPriority: 100
+resourceVersion: 20260226

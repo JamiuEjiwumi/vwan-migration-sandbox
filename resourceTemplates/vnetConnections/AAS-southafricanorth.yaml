@@ -1,0 +1,32 @@
+kind: vnetConnections
+hubCode: AAS
+hubName: AAS-southafricanorth-vHub
+hubResourceGroup: rg-vhub-aas-southafricanorth
+hubRegion: southafricanorth
+
+defaults:
+  routeTable: default
+  propagateTo:
+    - default
+
+connections:
+  - name: conn-ppmalidev-southafricanorth-001
+    subscriptionId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    resourceGroup: rg-corpnet-ppmalidev-southafricanorth
+    vnetName: vnet-corpnet-ppmalidev-southafricanorth
+    routeTable: default
+    propagateTo: [default]
+
+  - name: conn-ppmalidev-southafricanorth-002
+    subscriptionId: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+    resourceGroup: rg-corpnet-ppmalidev-southafricanorth
+    vnetName: vnet-corpnet-ppmalidev2-southafricanorth
+
+tags:
+  Owner: Network
+  Program: OctaveMigration
+  Region: southafricanorth
+
+deploymentScript: Deploy-VHubVnetConnections.ps1
+deploymentPriority: 700
+resourceVersion: 20260226
