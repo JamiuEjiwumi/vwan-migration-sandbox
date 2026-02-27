@@ -26,7 +26,7 @@ on:
       skip_nva:
         description: "Skip Fortinet NVA + routing intent + discovery (true/false)"
         required: true
-        default: "true
+        default: "true"
 
 
 permissions:
