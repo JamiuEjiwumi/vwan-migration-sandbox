@@ -1,0 +1,11 @@
+kind: vwan
+name: vwan-sandbox
+resourceGroup:
+  name: rg-vwan-sandbox
+  location: uksouth
+deploymentScript: Deploy-VWAN.ps1
+deploymentPriority: 100
+resourceVersion: 20260227
+tags:
+  Owner: You
+  Program: SandboxTest
