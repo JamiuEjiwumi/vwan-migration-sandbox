@@ -37,7 +37,16 @@ function BicepPath([string]$rel) {
 
 function Az([string]$args) {
   Write-Info "az $args"
-  $out = & az $args 2>&1
+
+  # Force external Azure CLI binary (avoid calling this function again)
+  $azExe = (Get-Command az -CommandType Application -ErrorAction Stop).Source
+
+  # Split arguments similar to a shell (handles quotes)
+  $argList = [System.Management.Automation.PSParser]::Tokenize($args, [ref]$null) |
+    Where-Object { $_.Type -eq 'CommandArgument' } |
+    ForEach-Object { $_.Content }
+
+  $out = & $azExe @argList 2>&1
   if ($LASTEXITCODE -ne 0) { throw "az failed: $args`n$out" }
   $out
 }
