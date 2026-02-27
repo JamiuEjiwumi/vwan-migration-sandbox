@@ -1,0 +1,31 @@
+kind: vhub
+hubCode: AZS
+region: uksouth
+name: AZS-uksouth-vHub
+
+resourceGroup:
+  name: rg-vhub-azs-uksouth
+  location: uksouth
+
+vwan:
+  name: vwan-sandbox
+  resourceGroup: rg-vwan-sandbox
+
+hubAddressPrefix: 10.250.0.0/24
+scaleUnit: "2"
+
+uami:
+  name: uami-azs-uksouth-vhub
+  resourceGroup: rg-vhub-azs-uksouth
+  roleAssignments:
+    - role: Contributor
+      scope: subscription
+
+tags:
+  Owner: You
+  Program: SandboxTest
+  Region: uksouth
+
+deploymentScript: Deploy-vHubs.ps1
+deploymentPriority: 200
+resourceVersion: 20260227
