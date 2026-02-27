@@ -35,20 +35,36 @@ function BicepPath([string]$rel) {
   $p
 }
 
-function Az([string]$args) {
-  Write-Info "az $args"
 
-  # Force external Azure CLI binary (avoid calling this function again)
-  $azExe = (Get-Command az -CommandType Application -ErrorAction Stop).Source
+# Resolve the real az executable once
+$script:AzCLI = (Get-Command az -CommandType Application -ErrorAction Stop).Source
 
-  # Split arguments similar to a shell (handles quotes)
-  $argList = [System.Management.Automation.PSParser]::Tokenize($args, [ref]$null) |
-    Where-Object { $_.Type -eq 'CommandArgument' } |
-    ForEach-Object { $_.Content }
+function Az {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Args
+    )
 
-  $out = & $azExe @argList 2>&1
-  if ($LASTEXITCODE -ne 0) { throw "az failed: $args`n$out" }
-  $out
+    Write-Info "az $Args"
+
+    # Explicitly call the Azure CLI executable — avoids recursion
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $script:AzCLI
+    $psi.Arguments = $Args
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+
+    $p = [System.Diagnostics.Process]::Start($psi)
+    $stdout = $p.StandardOutput.ReadToEnd()
+    $stderr = $p.StandardError.ReadToEnd()
+    $p.WaitForExit()
+
+    if ($p.ExitCode -ne 0) {
+        throw "az failed (exit $($p.ExitCode)): $stderr"
+    }
+
+    return $stdout
 }
 
 function Get-HubTemplates {
