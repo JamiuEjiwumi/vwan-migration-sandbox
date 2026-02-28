@@ -22,7 +22,10 @@ function BicepPath([string]$rel) {
 }
 
 # Resolve the real az executable (Application), not any alias/function
-$script:AzExe = (Get-Command az -CommandType Application -ErrorAction Stop).Source
+$script:AzExe = (Get-Command az -CommandType Application -ErrorAction Stop |
+  Select-Object -First 1 -ExpandProperty Source)
+
+Write-Info "Using az executable: $script:AzExe"
 
 function Invoke-AzCli {
   param(

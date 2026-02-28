@@ -1,9 +1,9 @@
 name: Octave VWAN Migration - Redeploy Backbone
 
 on:
-  push:
-    branches:
-      - master
+  # push:
+  #   branches:
+  #     - master
 
   workflow_dispatch:
     inputs:
