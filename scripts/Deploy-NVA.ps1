@@ -1,5 +1,3 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
-
 param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
@@ -9,6 +7,8 @@ param(
   [Parameter(Mandatory)][string]$FortiManagerSerial,
   [string]$AdminPassword = ""
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 # Enforce FortiGate admin password (do not allow hardcoded defaults)
 if ([string]::IsNullOrWhiteSpace($AdminPassword)) {

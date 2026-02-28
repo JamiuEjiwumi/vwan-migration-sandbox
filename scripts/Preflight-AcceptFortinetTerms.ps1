@@ -1,11 +1,11 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
-
 param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
   [string]$CanaryHubCode = "AZS"
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 $hubFiles = Get-HubTemplates -HubsFolder $HubsFolder -HubsFilter $HubsFilter -CanaryMode:$CanaryMode -CanaryHubCode $CanaryHubCode
 

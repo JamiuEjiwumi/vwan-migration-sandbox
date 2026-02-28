@@ -1,4 +1,3 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
 param(
   [Parameter(Mandatory)][string]$HubCode,
   [Parameter(Mandatory)][string]$HubName,
@@ -6,6 +5,8 @@ param(
   [Parameter(Mandatory)][string]$HubRegion,
   [Parameter(Mandatory)][string]$OutFile
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 $doc = @{
   kind = "vnetConnections"

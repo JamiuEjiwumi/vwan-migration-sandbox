@@ -1,5 +1,6 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
 param([string]$OutputPath = "exports/vwan-inventory.json")
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 Write-Info "Exporting VWAN inventory from current subscription..."
 $vwanList = Az "network vwan list -o json" | ConvertFrom-Json

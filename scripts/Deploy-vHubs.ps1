@@ -1,5 +1,3 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
-
 param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
@@ -7,6 +5,8 @@ param(
   [string]$CanaryHubCode = "AZS",
   [string]$VwanTemplatePath = "resourceTemplates/vwan/vwan-global.yaml"
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 $vwan = Read-YamlFile $VwanTemplatePath
 if ($vwan.kind -ne "vwan") { throw "Expected kind=vwan in $VwanTemplatePath" }

@@ -1,11 +1,11 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
-
 param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
   [string]$CanaryHubCode = "AZS"
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 Write-Info "RoutingIntent is created by Deploy_secure_hub.bicep. This script validates it exists per hub."
 

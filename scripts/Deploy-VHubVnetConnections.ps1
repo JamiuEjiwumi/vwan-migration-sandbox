@@ -1,11 +1,11 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
-
 param(
   [Parameter(Mandatory)][string]$ConnectionsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
   [string]$CanaryHubCode = "AZS"
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 Assert-Path $ConnectionsFolder
 $bicep = BicepPath "biceps/move-vnet-2-vwan.bicep"

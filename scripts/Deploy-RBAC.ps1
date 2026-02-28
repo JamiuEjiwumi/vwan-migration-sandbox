@@ -1,5 +1,3 @@
-. "$PSScriptRoot/SharedFunctions.ps1"
-
 param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
@@ -9,6 +7,8 @@ param(
   [ValidateSet("subscription")]
   [string]$Scope = "subscription"
 )
+
+. "$PSScriptRoot/SharedFunctions.ps1"
 
 $sub = (Az "account show -o json" | ConvertFrom-Json).id
 $scope = "/subscriptions/$sub"
