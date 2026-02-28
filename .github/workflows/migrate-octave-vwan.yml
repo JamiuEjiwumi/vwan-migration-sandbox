@@ -185,7 +185,7 @@ jobs:
           pwsh -File scripts/Deploy-vHubs.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
             -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
+            -CanaryMode ${{ fromJSON(inputs.canary_mode) }} `
             -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
 
       - name: Validate hubs
