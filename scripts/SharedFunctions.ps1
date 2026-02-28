@@ -69,10 +69,10 @@ function Ensure-ResourceGroup {
     [Parameter(Mandatory)][string]$location
   )
 
-  $exists = [bool]((Az @("group","exists","-n",$name)) | ConvertFrom-Json)
+  $exists = [bool]((Invoke-AzCli @("group","exists","-n",$name)) | ConvertFrom-Json)
 
   if (-not $exists) {
-    Az @("group","create","-n",$name,"-l",$location) | Out-Null
+    Invoke-AzCli @("group","create","-n",$name,"-l",$location) | Out-Null
     Write-Info "Created RG: $name"
   }
   else {
