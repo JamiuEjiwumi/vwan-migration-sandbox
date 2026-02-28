@@ -4,7 +4,7 @@ param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
-  [string]$CanaryHubCode = "AZS",
+  [string]$CanaryHubCode = "Invoke-AzCliS",
   [Parameter(Mandatory)][string]$FortiManagerIP,
   [Parameter(Mandatory)][string]$FortiManagerSerial,
   [string]$AdminPassword = ""
@@ -48,7 +48,7 @@ foreach ($f in $hubFiles) {
   $params | ConvertTo-Json -Depth 20 | Set-Content $tmp -Encoding utf8
 
   $dep = "securehub-$($h.hubCode)-$($h.region)-$($h.resourceVersion)"
-  Az "deployment group create -g $rg -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+  Invoke-AzCli "deployment group create -g $rg -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
 
   Write-Info "Secure hub deployed for: $($h.name)"
 }

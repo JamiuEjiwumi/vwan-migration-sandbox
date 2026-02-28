@@ -4,7 +4,7 @@ param(
   [Parameter(Mandatory)][string]$ConnectionsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
-  [string]$CanaryHubCode = "AZS"
+  [string]$CanaryHubCode = "Invoke-AzCliS"
 )
 
 Assert-Path $ConnectionsFolder
@@ -38,7 +38,7 @@ foreach ($f in $files) {
 
     $dep = "vnetconn-$($cfg.hubCode)-$($c.vnetName)-$($cfg.resourceVersion)"
     # Hub is a resource-group scoped resource; deploy into the hub RG
-    Az "deployment group create -g $($cfg.hubResourceGroup) -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+    Invoke-AzCli "deployment group create -g $($cfg.hubResourceGroup) -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
 
     Write-Info "Connected VNet $($c.vnetName) (sub $($c.subscriptionId)) to hub $($cfg.hubName)"
   }

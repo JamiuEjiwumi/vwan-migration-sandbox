@@ -4,7 +4,7 @@ param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
-  [string]$CanaryHubCode = "AZS"
+  [string]$CanaryHubCode = "Invoke-AzCliS"
 )
 
 $bicep = BicepPath "biceps/Deploy_managed_identity_avm.bicep"
@@ -28,7 +28,7 @@ foreach ($f in $hubFiles) {
   $params | ConvertTo-Json -Depth 10 | Set-Content $tmp -Encoding utf8
 
   $dep = "uami-$($h.hubCode)-$($h.region)-$($h.resourceVersion)"
-  Az "deployment group create -g $uamiRg -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+  Invoke-AzCli "deployment group create -g $uamiRg -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
 
   Write-Info "UAMI deployed: $($h.uami.name)"
 }
