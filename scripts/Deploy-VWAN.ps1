@@ -8,7 +8,7 @@ param(
 $v = Read-YamlFile $TemplatePath
 if ($v.kind -ne "vwan") { throw "Expected kind=vwan in $TemplatePath" }
 
-Ensure-ResourceGroup $v.resourceGroup.name $v.resourceGroup.location
+Ensure-ResourceGroup -name $v.resourceGroup.name -location $v.resourceGroup.location
 
 $bicep = BicepPath "biceps/Deploy_virtual_wan_avm.bicep"
 
@@ -21,6 +21,13 @@ $tmp = New-TemporaryFile
 $params | ConvertTo-Json -Depth 10 | Set-Content $tmp -Encoding utf8
 
 $dep = "vwan-$($v.name)-$($v.resourceVersion)"
-Az "deployment group create -g $($v.resourceGroup.name) -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+
+Az @(
+  "deployment","group","create",
+  "-g", $v.resourceGroup.name,
+  "-n", $dep,
+  "-f", $bicep,
+  "-p", $tmp
+) | Out-Null
 
 Write-Info "VWAN deployed: $dep"

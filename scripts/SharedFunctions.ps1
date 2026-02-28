@@ -1,19 +1,5 @@
 Set-StrictMode -Version Latest
-
-# Ensure YAML cmdlets exist
-if (-not (Get-Command ConvertFrom-Yaml -ErrorAction SilentlyContinue)) {
-  try { Import-Module powershell-yaml -ErrorAction Stop } catch { }
-}
 $ErrorActionPreference = 'Stop'
-
-# Ensure YAML cmdlets are available
-if (-not (Get-Command ConvertFrom-Yaml -ErrorAction SilentlyContinue)) {
-  try {
-    Import-Module powershell-yaml -ErrorAction Stop
-  } catch {
-    throw "Missing 'powershell-yaml' module. Install with: Install-Module powershell-yaml -Scope CurrentUser -Force"
-  }
-}
 
 function Write-Info($msg) { Write-Host "[INFO] $msg" -ForegroundColor Cyan }
 function Write-Warn($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
@@ -35,20 +21,21 @@ function BicepPath([string]$rel) {
   $p
 }
 
+# Resolve the real az executable (Application), not any alias/function
+$script:AzExe = (Get-Command az -CommandType Application -ErrorAction Stop).Source
 
-function Invoke-AzCli([Parameter(Mandatory)][string]$Args) {
-  Write-Info "az $Args"
+function Az {
+  param(
+    [Parameter(Mandatory)][string[]]$Args
+  )
 
-  $azExe = (Get-Command az -CommandType Application -ErrorAction Stop).Source
+  Write-Info ("az " + ($Args -join " "))
 
-  # Split args safely (handles quotes)
-  $tokens = [System.Management.Automation.PSParser]::Tokenize($Args, [ref]$null) |
-    Where-Object { $_.Type -eq 'CommandArgument' } |
-    ForEach-Object { $_.Content }
-
-  $out = & $azExe @tokens 2>&1
-  if ($LASTEXITCODE -ne 0) { throw "az failed: $Args`n$out" }
-  $out
+  $out = & $script:AzExe @Args 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw ("az failed: az " + ($Args -join " ") + "`n" + ($out | Out-String))
+  }
+  return $out
 }
 
 function Get-HubTemplates {
@@ -76,12 +63,19 @@ function Get-HubTemplates {
   return $files
 }
 
-function Ensure-ResourceGroup([string]$name, [string]$location) {
-  $exists = (Az "group exists -n $name" | ConvertFrom-Json)
+function Ensure-ResourceGroup {
+  param(
+    [Parameter(Mandatory)][string]$name,
+    [Parameter(Mandatory)][string]$location
+  )
+
+  $exists = [bool]((Az @("group","exists","-n",$name)) | ConvertFrom-Json)
+
   if (-not $exists) {
-    Az "group create -n $name -l $location" | Out-Null
+    Az @("group","create","-n",$name,"-l",$location) | Out-Null
     Write-Info "Created RG: $name"
-  } else {
+  }
+  else {
     Write-Info "RG exists: $name"
   }
 }
