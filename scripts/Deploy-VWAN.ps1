@@ -27,7 +27,8 @@ Invoke-AzCli @(
   "-g", $v.resourceGroup.name,
   "-n", $dep,
   "-f", $bicep,
-  "-p", $tmp
+  "-p", "virtualWans_global_vwan_name=$($v.name)",
+       "location=$($v.location)"
 ) | Out-Null
 
 Write-Info "VWAN deployed: $dep"
