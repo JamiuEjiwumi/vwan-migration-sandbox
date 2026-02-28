@@ -10,11 +10,13 @@ on:
       environment:
         description: "GitHub Environment (e.g., octave-prod)"
         required: true
-        default: "octave-prod"
+        # default: "octave-prod"
+        default: "personal-test"
       hubs_filter:
         description: "Hub code filter (e.g., AZS) or 'all'"
         required: false
-        default: "all"
+        # default: "all"
+        default: "AZS"
       connect_vnets:
         description: "Also deploy VNet connections (true/false)"
         required: true
@@ -22,7 +24,8 @@ on:
       canary_mode:
         description: "Deploy only a single hub (true/false)"
         required: true
-        default: "false"
+        # default: "false"
+        default: "true"
       canary_hub_code:
         description: "Hub code for canary (e.g., AZS)"
         required: false
