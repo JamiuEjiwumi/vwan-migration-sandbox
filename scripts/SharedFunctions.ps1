@@ -21,22 +21,22 @@ function BicepPath([string]$rel) {
   $p
 }
 
-# Resolve the real Invoke-AzCli executable (Application), not any alias/function
-$script:Invoke-AzCliExe = (Get-Command Invoke-AzCli -CommandType Application -ErrorAction Stop |
+# Resolve the real az executable (Application), not any alias/function
+$script:AzExe = (Get-Command az -CommandType Application -ErrorAction Stop |
   Select-Object -First 1 -ExpandProperty Source)
 
-Write-Info "Using Invoke-AzCli executable: $script:Invoke-AzCliExe"
+Write-Info "Using az executable: $script:AzExe"
 
-function Invoke-Invoke-AzCliCli {
+function Invoke-AzCli {
   param(
-    [Parameter(Mandatory)][string[]]$Invoke-AzCliArgs
+    [Parameter(Mandatory)][string[]]$AzArgs
   )
 
-  Write-Info ("Invoke-AzCli " + ($Invoke-AzCliArgs -join " "))
+  Write-Info ("az " + ($AzArgs -join " "))
 
-  $out = & $script:Invoke-AzCliExe @Invoke-AzCliArgs 2>&1
+  $out = & $script:AzExe @AzArgs 2>&1
   if ($LASTEXITCODE -ne 0) {
-    throw ("Invoke-AzCli failed: Invoke-AzCli " + ($Invoke-AzCliArgs -join " ") + "`n" + ($out | Out-String))
+    throw ("az failed: az " + ($AzArgs -join " ") + "`n" + ($out | Out-String))
   }
   return $out
 }
@@ -46,7 +46,7 @@ function Get-HubTemplates {
     [Parameter(Mandatory)][string]$HubsFolder,
     [string]$HubsFilter = "all",
     [bool]$CanaryMode = $false,
-    [string]$CanaryHubCode = "Invoke-AzCliS"
+    [string]$CanaryHubCode = "AZS"
   )
   Assert-Path $HubsFolder
   $files = Get-ChildItem $HubsFolder -Filter "vhub-*.yaml" -File | Sort-Object Name
@@ -72,10 +72,10 @@ function Ensure-ResourceGroup {
     [Parameter(Mandatory)][string]$location
   )
 
-  $exists = [bool]((Invoke-Invoke-AzCliCli @("group","exists","-n",$name)) | ConvertFrom-Json)
+  $exists = [bool]((Invoke-AzCli @("group","exists","-n",$name)) | ConvertFrom-Json)
 
   if (-not $exists) {
-    Invoke-Invoke-AzCliCli @("group","create","-n",$name,"-l",$location) | Out-Null
+    Invoke-AzCli @("group","create","-n",$name,"-l",$location) | Out-Null
     Write-Info "Created RG: $name"
   }
   else {

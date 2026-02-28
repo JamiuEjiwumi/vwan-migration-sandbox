@@ -4,7 +4,7 @@ param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
-  [string]$CanaryHubCode = "Invoke-AzCliS",
+  [string]$CanaryHubCode = "AZS",
   [string]$VwanTemplatePath = "resourceTemplates/vwan/vwan-global.yaml"
 )
 
@@ -12,7 +12,7 @@ $vwan = Read-YamlFile $VwanTemplatePath
 if ($vwan.kind -ne "vwan") { throw "Expected kind=vwan in $VwanTemplatePath" }
 
 # Resolve VWAN ID (must exist first)
-$vwanObj = Invoke-AzCli "network vwan show -g $($vwan.resourceGroup.name) -n $($vwan.name) -o json" | ConvertFrom-Json
+$vwanObj = Az "network vwan show -g $($vwan.resourceGroup.name) -n $($vwan.name) -o json" | ConvertFrom-Json
 $vwanId = $vwanObj.id
 if (-not $vwanId) { throw "Unable to resolve VWAN id for $($vwan.name)" }
 
@@ -35,7 +35,7 @@ foreach ($f in $hubFiles) {
   $params | ConvertTo-Json -Depth 10 | Set-Content $tmp -Encoding utf8
 
   $dep = "hub-$($h.hubCode)-$($h.region)-$($h.resourceVersion)"
-  Invoke-AzCli "deployment group create -g $($h.resourceGroup.name) -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+  Az "deployment group create -g $($h.resourceGroup.name) -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
 
   Write-Info "Hub deployed: $($h.name)"
 }

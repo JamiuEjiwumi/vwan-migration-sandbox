@@ -22,7 +22,7 @@ $params | ConvertTo-Json -Depth 10 | Set-Content $tmp -Encoding utf8
 
 $dep = "vwan-$($v.name)-$($v.resourceVersion)"
 
-Invoke-Invoke-AzCliCli @(
+Invoke-AzCli @(
   "deployment","group","create",
   "-g", $v.resourceGroup.name,
   "-n", $dep,

@@ -4,7 +4,7 @@ param(
   [Parameter(Mandatory)][string]$HubsFolder,
   [string]$HubsFilter = "all",
   [bool]$CanaryMode = $false,
-  [string]$CanaryHubCode = "Invoke-AzCliS"
+  [string]$CanaryHubCode = "AZS"
 )
 
 $hubFiles = Get-HubTemplates -HubsFolder $HubsFolder -HubsFilter $HubsFilter -CanaryMode:$CanaryMode -CanaryHubCode $CanaryHubCode
@@ -26,7 +26,7 @@ foreach ($f in $hubFiles) {
     $urn = "$publisher:$offer:$plan:$version"
     Write-Info "$($f.Name): attempting vm image terms accept for URN: $urn"
     try {
-      Invoke-AzCli "vm image terms accept --urn $urn" | Out-Null
+      Az "vm image terms accept --urn $urn" | Out-Null
       continue
     } catch {
       Write-Warn "$($f.Name): vm image terms accept failed; will try marketplace agreement accept instead."
@@ -35,7 +35,7 @@ foreach ($f in $hubFiles) {
 
   # Fallback: marketplace agreement (common for managed applications)
   Write-Info "$($f.Name): attempting marketplace agreement accept: $publisher / $offer / $plan"
-  Invoke-AzCli "marketplace agreement accept --publisher $publisher --offer $offer --plan $plan" | Out-Null
+  Az "marketplace agreement accept --publisher $publisher --offer $offer --plan $plan" | Out-Null
 }
 
 Write-Info "Preflight terms acceptance complete."
