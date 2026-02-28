@@ -24,16 +24,16 @@ function BicepPath([string]$rel) {
 # Resolve the real az executable (Application), not any alias/function
 $script:AzExe = (Get-Command az -CommandType Application -ErrorAction Stop).Source
 
-function Az {
+function Invoke-AzCli {
   param(
-    [Parameter(Mandatory)][string[]]$Args
+    [Parameter(Mandatory)][string[]]$AzArgs
   )
 
-  Write-Info ("az " + ($Args -join " "))
+  Write-Info ("az " + ($AzArgs -join " "))
 
-  $out = & $script:AzExe @Args 2>&1
+  $out = & $script:AzExe @AzArgs 2>&1
   if ($LASTEXITCODE -ne 0) {
-    throw ("az failed: az " + ($Args -join " ") + "`n" + ($out | Out-String))
+    throw ("az failed: az " + ($AzArgs -join " ") + "`n" + ($out | Out-String))
   }
   return $out
 }
