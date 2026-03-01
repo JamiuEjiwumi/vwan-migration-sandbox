@@ -26,7 +26,7 @@ foreach ($f in $hubFiles) {
 
   # Try VM image URN acceptance (common for FortiGate VM images)
   if ($version) {
-    $urn = "$publisher:$offer:$plan:$version"
+    $urn = "${publisher}:${offer}:${plan}:${version}"
     Write-Info "$($f.Name): attempting vm image terms accept for URN: $urn"
     try {
       Invoke-AzCli @("vm","image","terms","accept","--urn",$urn) | Out-Null
