@@ -33,16 +33,16 @@ foreach ($f in $hubFiles) {
       continue
     }
     catch {
-      Write-Warn "$($f.Name): vm image terms accept failed; will try marketplace agreement accept instead."
+      Write-Warn "$($f.Name): vm image terms accept failed; will try term accept instead."
     }
   }
 
   # Fallback: marketplace agreement (common for managed applications)
-  Write-Info "$($f.Name): attempting marketplace agreement accept: $publisher / $offer / $plan"
+  Write-Info "$($f.Name): attempting term accept: $publisher / $offer / $plan"
   Invoke-AzCli @(
-    "marketplace","agreement","accept",
+    "term","accept",
     "--publisher",$publisher,
-    "--offer",$offer,
+    "--product",$offer,
     "--plan",$plan
   ) | Out-Null
 }
