@@ -237,7 +237,7 @@ jobs:
           $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
           $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
 
-          pwsh -File scripts/Deploy-UAMI.ps1 -Stage "uami" `
+          pwsh -File scripts/Deploy-UAMI.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
             -HubsFilter $hubsFilter `
             -CanaryMode:$canaryMode `
@@ -286,7 +286,7 @@ jobs:
           $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
           $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
 
-          pwsh -File scripts/Deploy-RBAC.ps1 -Stage "rbac" `
+          pwsh -File scripts/Deploy-RBAC.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
             -HubsFilter $hubsFilter `
             -CanaryMode:$canaryMode `
