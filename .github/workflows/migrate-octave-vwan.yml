@@ -10,13 +10,13 @@ on:
       environment:
         description: "GitHub Environment (e.g., octave-prod)"
         required: true
-        # default: "octave-prod"
-        default: "personal-test"
+        default: "octave-prod"
+        # default: "personal-test"
       hubs_filter:
         description: "Hub code filter (e.g., AZS) or 'all'"
         required: false
-        # default: "all"
-        default: "AZS"
+        default: "all"
+        # default: "AZS"
       connect_vnets:
         description: "Also deploy VNet connections (true/false)"
         required: true
@@ -24,16 +24,16 @@ on:
       canary_mode:
         description: "Deploy only a single hub (true/false)"
         required: true
-        # default: "false"
-        default: "true"
+        default: "false"
+        # default: "true"
       canary_hub_code:
         description: "Hub code for canary (e.g., AZS)"
         required: false
         default: "AZS"
-      skip_nva:
-        description: "Skip Fortinet NVA + routing intent + discovery (true/false)"
-        required: true
-        default: "true"
+      # skip_nva:
+      #   description: "Skip Fortinet NVA + routing intent + discovery (true/false)"
+      #   required: true
+      #   default: "true"
 
 
 permissions:
@@ -108,7 +108,7 @@ jobs:
           }
 
       - name: Accept Fortinet marketplace terms (per version)
-        if: ${{ inputs.skip_nva != 'true' }}
+        # if: ${{ inputs.skip_nva != 'true' }}
         shell: pwsh
         run: |
           $hubsFilter = "${{ steps.vars.outputs.hubs_filter }}"
@@ -122,7 +122,7 @@ jobs:
             -CanaryHubCode $canaryHub
 
       - name: Validate required secrets exist
-        if: ${{ inputs.skip_nva != 'true' }}
+        # if: ${{ inputs.skip_nva != 'true' }}
         shell: pwsh
         run: |
           if (-not "${{ secrets.FORTIMANAGER_IP }}") { throw "Missing FORTIMANAGER_IP secret" }
@@ -330,7 +330,7 @@ jobs:
     name: 5) Deploy Fortinet NVA + Routing Intent (per hub)
     runs-on: ubuntu-latest
     needs: [deploy_rbac]
-    if: ${{ inputs.skip_nva != 'true' }}
+    # if: ${{ inputs.skip_nva != 'true' }}
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
@@ -384,7 +384,7 @@ jobs:
     name: 6) Discover managed RG + NVA resource IDs (per hub)
     runs-on: ubuntu-latest
     needs: [deploy_nva]
-    if: ${{ inputs.skip_nva != 'true' }}
+    # if: ${{ inputs.skip_nva != 'true' }}
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
@@ -426,7 +426,7 @@ jobs:
     name: 7) Validate routing intent
     runs-on: ubuntu-latest
     needs: [discover_nva]
-    if: ${{ inputs.skip_nva != 'true' }}
+    # if: ${{ inputs.skip_nva != 'true' }}
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
