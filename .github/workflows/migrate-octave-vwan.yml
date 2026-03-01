@@ -139,6 +139,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -171,6 +172,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -184,18 +186,18 @@ jobs:
         run: |
           pwsh -File scripts/Deploy-vHubs.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
-            -CanaryMode ${{ fromJSON(inputs.canary_mode) }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
+            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
       - name: Validate hubs
         shell: pwsh
         run: |
           pwsh -File scripts/Validate-Stage.ps1 -Stage "hubs" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
   deploy_uami:
     name: 3) Create UAMI (one per hub)
@@ -211,6 +213,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -224,18 +227,18 @@ jobs:
         run: |
           pwsh -File scripts/Deploy-UAMI.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
       - name: Validate UAMI
         shell: pwsh
         run: |
           pwsh -File scripts/Validate-Stage.ps1 -Stage "uami" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
   deploy_rbac:
     name: 4) Assign RBAC (Contributor @ subscription)
@@ -251,6 +254,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -264,9 +268,9 @@ jobs:
         run: |
           pwsh -File scripts/Deploy-RBAC.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}" `
             -RoleName "Contributor" `
             -Scope "subscription"
 
@@ -275,9 +279,9 @@ jobs:
         run: |
           pwsh -File scripts/Wait-RbacPropagation.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}" `
             -TimeoutMinutes 20 `
             -PollSeconds 20
 
@@ -286,9 +290,9 @@ jobs:
         run: |
           pwsh -File scripts/Validate-Stage.ps1 -Stage "rbac" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
   deploy_nva:
     name: 5) Deploy Fortinet NVA + Routing Intent (per hub)
@@ -305,6 +309,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -320,9 +325,9 @@ jobs:
         run: |
           pwsh -File scripts/Deploy-NVA.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}" `
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}" `
             -FortiManagerIP "${{ secrets.FORTIMANAGER_IP }}" `
             -FortiManagerSerial "${{ secrets.FORTIMANAGER_SERIAL }}"
 
@@ -331,9 +336,9 @@ jobs:
         run: |
           pwsh -File scripts/Validate-Stage.ps1 -Stage "nva" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
   discover_nva:
     name: 6) Discover managed RG + NVA resource IDs (per hub)
@@ -350,6 +355,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - uses: azure/login@v2
         with:
@@ -362,9 +368,9 @@ jobs:
         run: |
           pwsh -File scripts/Discover-NvaFromManagedRg.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
       - name: Upload NVA mapping artifacts
         uses: actions/upload-artifact@v4
@@ -392,9 +398,9 @@ jobs:
         run: |
           pwsh -File scripts/Validate-Stage.ps1 -Stage "routing_intent" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
   connect_vnets:
     name: 8) Connect VNets to hubs
@@ -411,6 +417,7 @@ jobs:
           if (-not (Get-Module -ListAvailable powershell-yaml)) {
             Install-Module powershell-yaml -Force -Scope CurrentUser
           }
+          Import-Module powershell-yaml -ErrorAction Stop
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -424,18 +431,18 @@ jobs:
         run: |
           pwsh -File scripts/Deploy-VHubVnetConnections.ps1 `
             -ConnectionsFolder "resourceTemplates/vnetConnections" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
       - name: Validate connections
         shell: pwsh
         run: |
           pwsh -File scripts/Validate-Stage.ps1 -Stage "vnet_connections" `
             -ConnectionsFolder "resourceTemplates/vnetConnections" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter }}" `
+            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
             -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub }}"
+            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
 
   summary:
     name: Summary
