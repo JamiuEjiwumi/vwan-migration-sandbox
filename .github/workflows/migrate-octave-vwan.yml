@@ -111,11 +111,15 @@ jobs:
         if: ${{ inputs.skip_nva != 'true' }}
         shell: pwsh
         run: |
+          $hubsFilter = "${{ steps.vars.outputs.hubs_filter }}"
+          $canaryHub  = "${{ steps.vars.outputs.canary_hub }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Preflight-AcceptFortinetTerms.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ steps.vars.outputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ steps.vars.outputs.canary_hub }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
       - name: Validate required secrets exist
         if: ${{ inputs.skip_nva != 'true' }}
@@ -290,7 +294,7 @@ jobs:
             -HubsFolder "resourceTemplates/hubs" `
             -HubsFilter $hubsFilter `
             -CanaryMode:$canaryMode `
-            -CanaryHubCode $canaryHub
+            -CanaryHubCode $canaryHub `
             -RoleName "Contributor" `
             -Scope "subscription"
 
@@ -301,11 +305,11 @@ jobs:
           $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
           $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
 
-          pwsh -File scripts/Wait-RbacPropagation.ps1 -Stage "rbac" `
+          pwsh -File scripts/Wait-RbacPropagation.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
             -HubsFilter $hubsFilter `
             -CanaryMode:$canaryMode `
-            -CanaryHubCode $canaryHub
+            -CanaryHubCode $canaryHub `
             -TimeoutMinutes 20 `
             -PollSeconds 20
 
@@ -351,22 +355,30 @@ jobs:
         env:
           FORTIGATE_ADMIN_PASSWORD: ${{ secrets.FORTIGATE_ADMIN_PASSWORD }}
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Deploy-NVA.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}" `
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub `
             -FortiManagerIP "${{ secrets.FORTIMANAGER_IP }}" `
             -FortiManagerSerial "${{ secrets.FORTIMANAGER_SERIAL }}"
 
       - name: Validate NVA
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Validate-Stage.ps1 -Stage "nva" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
   discover_nva:
     name: 6) Discover managed RG + NVA resource IDs (per hub)
@@ -394,11 +406,15 @@ jobs:
       - name: Discover NVA IDs
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Discover-NvaFromManagedRg.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
       - name: Upload NVA mapping artifacts
         uses: actions/upload-artifact@v4
@@ -424,11 +440,15 @@ jobs:
       - name: Validate routing intent
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Validate-Stage.ps1 -Stage "routing_intent" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
   connect_vnets:
     name: 8) Connect VNets to hubs
@@ -457,20 +477,28 @@ jobs:
       - name: Deploy VNet connections
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Deploy-VHubVnetConnections.ps1 `
-            -ConnectionsFolder "resourceTemplates/vnetConnections" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFolder "resourceTemplates/vnetConnections" `
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
       - name: Validate connections
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Validate-Stage.ps1 -Stage "vnet_connections" `
-            -ConnectionsFolder "resourceTemplates/vnetConnections" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFolder "resourceTemplates/vnetConnections" `
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
   summary:
     name: Summary

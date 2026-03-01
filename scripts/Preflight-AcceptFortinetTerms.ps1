@@ -5,6 +5,9 @@ param(
   [string]$CanaryHubCode = "AZS"
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 . "$PSScriptRoot/SharedFunctions.ps1"
 
 $hubFiles = Get-HubTemplates -HubsFolder $HubsFolder -HubsFilter $HubsFilter -CanaryMode:$CanaryMode -CanaryHubCode $CanaryHubCode
@@ -26,16 +29,22 @@ foreach ($f in $hubFiles) {
     $urn = "$publisher:$offer:$plan:$version"
     Write-Info "$($f.Name): attempting vm image terms accept for URN: $urn"
     try {
-      Az "vm image terms accept --urn $urn" | Out-Null
+      Invoke-AzCli @("vm","image","terms","accept","--urn",$urn) | Out-Null
       continue
-    } catch {
+    }
+    catch {
       Write-Warn "$($f.Name): vm image terms accept failed; will try marketplace agreement accept instead."
     }
   }
 
   # Fallback: marketplace agreement (common for managed applications)
   Write-Info "$($f.Name): attempting marketplace agreement accept: $publisher / $offer / $plan"
-  Az "marketplace agreement accept --publisher $publisher --offer $offer --plan $plan" | Out-Null
+  Invoke-AzCli @(
+    "marketplace","agreement","accept",
+    "--publisher",$publisher,
+    "--offer",$offer,
+    "--plan",$plan
+  ) | Out-Null
 }
 
 Write-Info "Preflight terms acceptance complete."

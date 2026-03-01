@@ -6,6 +6,9 @@ param(
   [Parameter(Mandatory)][string]$OutFile
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 . "$PSScriptRoot/SharedFunctions.ps1"
 
 $doc = @{

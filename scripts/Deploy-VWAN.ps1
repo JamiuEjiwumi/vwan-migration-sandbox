@@ -3,6 +3,9 @@ param(
   [string]$TemplatePath
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 . "$PSScriptRoot/SharedFunctions.ps1"
 
 $v = Read-YamlFile $TemplatePath
