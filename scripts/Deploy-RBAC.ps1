@@ -8,9 +8,12 @@ param(
   [string]$Scope = "subscription"
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 . "$PSScriptRoot/SharedFunctions.ps1"
 
-$sub = (Az "account show -o json" | ConvertFrom-Json).id
+$sub = (Invoke-AzCli "account show -o json" | ConvertFrom-Json).id
 $scope = "/subscriptions/$sub"
 
 $hubFiles = Get-HubTemplates -HubsFolder $HubsFolder -HubsFilter $HubsFilter -CanaryMode:$CanaryMode -CanaryHubCode $CanaryHubCode
@@ -19,17 +22,24 @@ foreach ($f in $hubFiles) {
   $h = Read-YamlFile $f.FullName
   $u = $h.uami
 
-  $idObj = Az "identity show -g $($u.resourceGroup) -n $($u.name) -o json" | ConvertFrom-Json
+  $idObj = Invoke-AzCli "identity show -g $($u.resourceGroup) -n $($u.name) -o json" | ConvertFrom-Json
   $principalId = $idObj.principalId
   if (-not $principalId) { throw "Cannot resolve principalId for $($u.name)" }
 
-  $existing = Az "role assignment list --assignee $principalId --role `"$RoleName`" --scope $scope -o json" | ConvertFrom-Json
+  $existing = Invoke-AzCli "role assignment list --assignee $principalId --role `"$RoleName`" --scope $scope -o json" | ConvertFrom-Json
   if ($existing.Count -gt 0) {
     Write-Info "RBAC exists: $RoleName for $($u.name)"
     continue
   }
 
-  Az "role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal --role `"$RoleName`" --scope $scope" | Out-Null
+  Invoke-AzCli @(
+    "role","assignment","create",
+    "--assignee-object-id", $principalId,
+    "--assignee-principal-type", "ServicePrincipal",
+    "--role", $RoleName,
+    "--scope", $scope
+  ) | Out-Null
+
   Write-Info "RBAC assigned: $RoleName for $($u.name)"
 }
 

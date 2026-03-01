@@ -8,6 +8,9 @@ param(
   [string]$AdminPassword = ""
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 . "$PSScriptRoot/SharedFunctions.ps1"
 
 # Enforce FortiGate admin password (do not allow hardcoded defaults)
@@ -38,7 +41,7 @@ foreach ($f in $hubFiles) {
     fortiGateImageVersion = $h.nva.fortiGateImageVersion
     fortiManagerIP        = $FortiManagerIP
     fortiManagerSerial    = $FortiManagerSerial
-    adminPassword       = $AdminPassword
+    adminPassword         = $AdminPassword
   }
 
   # Remove null/empty keys so Bicep defaults apply
@@ -48,7 +51,12 @@ foreach ($f in $hubFiles) {
   $params | ConvertTo-Json -Depth 20 | Set-Content $tmp -Encoding utf8
 
   $dep = "securehub-$($h.hubCode)-$($h.region)-$($h.resourceVersion)"
-  Az "deployment group create -g $rg -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+  Invoke-AzCli @(
+    "deployment","group","create",
+    "-g", $rg,
+    "-n", $dep,
+    "-f", $bicep
+  ) | Out-Null
 
   Write-Info "Secure hub deployed for: $($h.name)"
 }

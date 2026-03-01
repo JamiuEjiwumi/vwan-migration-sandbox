@@ -5,6 +5,9 @@ param(
   [string]$CanaryHubCode = "AZS"
 )
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 . "$PSScriptRoot/SharedFunctions.ps1"
 
 $bicep = BicepPath "biceps/Deploy_managed_identity_avm.bicep"
@@ -17,18 +20,20 @@ foreach ($f in $hubFiles) {
   $uamiRg = $h.uami.resourceGroup
   $uamiLocation = $h.resourceGroup.location
 
-  Ensure-ResourceGroup $uamiRg $uamiLocation
-
-  $params = @{
-    uamiName = $h.uami.name
-    location = $uamiLocation
-  }
-
-  $tmp = New-TemporaryFile
-  $params | ConvertTo-Json -Depth 10 | Set-Content $tmp -Encoding utf8
+  Ensure-ResourceGroup -name $uamiRg -location $uamiLocation
 
   $dep = "uami-$($h.hubCode)-$($h.region)-$($h.resourceVersion)"
-  Az "deployment group create -g $uamiRg -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+
+  # Pass parameters inline (avoids JSON parameter-file shape issues)
+  Invoke-AzCli @(
+    "deployment","group","create",
+    "-g", $uamiRg,
+    "-n", $dep,
+    "-f", $bicep,
+    "-p",
+      "uamiName=$($h.uami.name)",
+      "location=$uamiLocation"
+  ) | Out-Null
 
   Write-Info "UAMI deployed: $($h.uami.name)"
 }
