@@ -80,6 +80,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install PowerShell YAML support
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable powershell-yaml)) {
+            Install-Module powershell-yaml -Force -Scope CurrentUser -AllowClobber
+          }
+          Import-Module powershell-yaml -ErrorAction Stop
+          Get-Command ConvertFrom-Yaml
+
       - name: Set vars
         id: vars
         shell: pwsh
