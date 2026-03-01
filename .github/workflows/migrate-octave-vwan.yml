@@ -184,11 +184,15 @@ jobs:
       - name: Deploy hubs from YAML
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Deploy-vHubs.ps1 `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
       - name: Validate hubs
         shell: pwsh
