@@ -482,7 +482,7 @@ jobs:
           $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
 
           pwsh -File scripts/Deploy-VHubVnetConnections.ps1 `
-            -HubsFolder "resourceTemplates/vnetConnections" `
+            -ConnectionsFolder "resourceTemplates/vnetConnections" `
             -HubsFilter $hubsFilter `
             -CanaryMode:$canaryMode `
             -CanaryHubCode $canaryHub
@@ -495,7 +495,7 @@ jobs:
           $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
 
           pwsh -File scripts/Validate-Stage.ps1 -Stage "vnet_connections" `
-            -HubsFolder "resourceTemplates/vnetConnections" `
+            -ConnectionsFolder "resourceTemplates/vnetConnections" `
             -HubsFilter $hubsFilter `
             -CanaryMode:$canaryMode `
             -CanaryHubCode $canaryHub
