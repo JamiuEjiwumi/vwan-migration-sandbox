@@ -38,7 +38,17 @@ foreach ($f in $files) {
 
     $dep = "vnetconn-$($cfg.hubCode)-$($c.vnetName)-$($cfg.resourceVersion)"
     # Hub is a resource-group scoped resource; deploy into the hub RG
-    Az "deployment group create -g $($cfg.hubResourceGroup) -n $dep -f `"$bicep`" -p `"$tmp`"" | Out-Null
+    Invoke-AzCli @(
+    "deployment","group","create",
+    "-g", $h.resourceGroup.name,
+    "-n", $dep,
+    "-f", $bicep,
+    "-p",
+      "location=$($h.resourceGroup.location)",
+      "virtualWanID=$vwanId",
+      "hubName=$($h.name)",
+      "addressPrefix=$($h.hubAddressPrefix)"
+  ) | Out-Null
 
     Write-Info "Connected VNet $($c.vnetName) (sub $($c.subscriptionId)) to hub $($cfg.hubName)"
   }

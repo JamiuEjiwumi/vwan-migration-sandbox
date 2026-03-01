@@ -197,11 +197,15 @@ jobs:
       - name: Validate hubs
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Validate-Stage.ps1 -Stage "hubs" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
   deploy_uami:
     name: 3) Create UAMI (one per hub)
@@ -229,20 +233,28 @@ jobs:
       - name: Deploy UAMI per hub
         shell: pwsh
         run: |
-          pwsh -File scripts/Deploy-UAMI.ps1 `
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
+          pwsh -File scripts/Deploy-UAMI.ps1 -Stage "uami" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
       - name: Validate UAMI
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Validate-Stage.ps1 -Stage "uami" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
   deploy_rbac:
     name: 4) Assign RBAC (Contributor @ subscription)
@@ -270,33 +282,45 @@ jobs:
       - name: Assign Contributor role to UAMI at subscription scope
         shell: pwsh
         run: |
-          pwsh -File scripts/Deploy-RBAC.ps1 `
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
+          pwsh -File scripts/Deploy-RBAC.ps1 -Stage "rbac" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}" `
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
             -RoleName "Contributor" `
             -Scope "subscription"
 
       - name: Wait for RBAC propagation
         shell: pwsh
         run: |
-          pwsh -File scripts/Wait-RbacPropagation.ps1 `
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
+          pwsh -File scripts/Wait-RbacPropagation.ps1 -Stage "rbac" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}" `
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
             -TimeoutMinutes 20 `
             -PollSeconds 20
 
       - name: Validate RBAC
         shell: pwsh
         run: |
+          $hubsFilter = "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}"
+          $canaryHub  = "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+          $canaryMode = ("${{ inputs.canary_mode }}".ToLower() -eq "true")
+
           pwsh -File scripts/Validate-Stage.ps1 -Stage "rbac" `
             -HubsFolder "resourceTemplates/hubs" `
-            -HubsFilter "${{ needs.preflight.outputs.hubs_filter || inputs.hubs_filter }}" `
-            -CanaryMode ${{ inputs.canary_mode == 'true' }} `
-            -CanaryHubCode "${{ needs.preflight.outputs.canary_hub || inputs.canary_hub_code }}"
+            -HubsFilter $hubsFilter `
+            -CanaryMode:$canaryMode `
+            -CanaryHubCode $canaryHub
 
   deploy_nva:
     name: 5) Deploy Fortinet NVA + Routing Intent (per hub)
